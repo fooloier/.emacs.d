@@ -8,3 +8,4 @@
 !pre-init.el
 !post-early-init.el
 !post-init.el
+!pre-install.org

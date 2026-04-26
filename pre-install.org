@@ -1,0 +1,8 @@
+* Font
+#+begin_src
+  sudo pacman -S ttf-sarasa-gothic inter-font ttc-iosevka
+#+end_src
+* Input Method
+#+begin_src
+  yay -S rime-ice-installer
+#+end_src

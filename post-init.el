@@ -89,30 +89,13 @@
 (setq auto-save-visited-interval 30)   ; Save after 5 seconds if inactivity
 (auto-save-visited-mode 1)
 
-;; set default theme
-
-(use-package gruber-darker-theme
-  :straight (:host github :repo "Eason0210/gruber-darker-theme"))
-
-(let ((inhibit-redisplay t))
-  ;; Disable all active themes
-  (mapc #'disable-theme custom-enabled-themes)
-  ;; Load the built-in theme
-  (load-theme 'gruber-darker t))
-
-;; set default font
-(set-face-attribute 'default nil
-                    :height 130 :weight 'normal :family "Iosevka Term")
-(set-fontset-font t 'han (font-spec :family "FZYouSong GBK" :size 16))
-
 ;; Corfu enhances in-buffer completion by displaying a compact popup with
 ;; current candidates, positioned either below or above the point. Candidates
 ;; can be selected by navigating up or down.
 (use-package corfu
   :commands (corfu-mode global-corfu-mode)
 
-  :hook ((prog-mode . corfu-mode)
-         (corfu-mode . corfu-history-mode))
+  :hook (corfu-mode . corfu-history-mode)
 
   :custom
   ;; Hide commands in M-x which do not apply to the current mode.
@@ -276,13 +259,6 @@
   (:map markdown-mode-map
         ("C-c C-e" . markdown-do)))
 
-;; Apheleia is an Emacs package designed to run code formatters (e.g., Shfmt,
-;; Black and Prettier) asynchronously without disrupting the cursor position.
-(use-package apheleia
-  :commands (apheleia-mode
-             apheleia-global-mode)
-  :hook ((prog-mode . apheleia-mode)))
-
 ;; The stripspace Emacs package provides stripspace-local-mode, a minor mode
 ;; that automatically removes trailing whitespace and blank lines at the end of
 ;; the buffer when saving.
@@ -349,53 +325,6 @@
   (which-key-add-column-padding 1)
   (which-key-max-description-length 40))
 
-;; `vterm' is an Emacs terminal emulator that provides a fully interactive shell
-;; experience within Emacs, supporting features such as color, cursor movement,
-;; and advanced terminal capabilities. Unlike standard Emacs terminal modes,
-;; `vterm' utilizes the libvterm C library for high-performance emulation. This
-;; ensures accurate terminal behavior when running shell programs, text-based
-;; applications, and REPLs.
-(use-package vterm
-  :if (bound-and-true-p module-file-suffix)
-  :commands (vterm
-             vterm-send-string
-             vterm-send-return
-             vterm-send-key
-             vterm-module-compile)
-
-  :preface
-  (when noninteractive
-    ;; vterm unnecessarily triggers compilation of vterm-module.so upon loading.
-    ;; This prevents that during byte-compilation (`use-package' eagerly loads
-    ;; packages when compiling).
-    (advice-add #'vterm-module-compile :override #'ignore))
-
-  (defun my-vterm--setup ()
-    ;; Hide the mode-line
-    (setq mode-line-format nil)
-
-    ;; Inhibit early horizontal scrolling
-    (setq-local hscroll-margin 0)
-
-    ;; Suppress prompts for terminating active processes when closing vterm
-    (setq-local confirm-kill-processes nil))
-
-  :init
-  (add-hook 'vterm-mode-hook #'my-vterm--setup)
-
-  (setq vterm-timer-delay 0.05)  ; Faster vterm
-  (setq vterm-kill-buffer-on-exit t)
-  (setq vterm-max-scrollback 5000))
-
-;;; Enable automatic insertion and management of matching pairs of characters
-;;; (e.g., (), {}, "") globally using `electric-pair-mode'.
-(use-package elec-pair
-  :ensure nil
-  :commands (electric-pair-mode
-             electric-pair-local-mode
-             electric-pair-delete-pair)
-  :hook (after-init . electric-pair-mode))
-
 ;; Display the current line and column numbers in the mode line
 (setq line-number-mode t)
 (setq column-number-mode t)
@@ -423,64 +352,61 @@
 ;; Configure Emacs to ask for confirmation before exiting
 (setq confirm-kill-emacs 'y-or-n-p)
 
-;; Chinese Input Method
+;; default theme
+(let ((inhibit-redisplay t))
+  ;; Disable all active themes
+  (mapc #'disable-theme custom-enabled-themes)
+  ;; Load the built-in theme
+  (load-theme 'modus-operandi t))
+(setq modus-themes-mixed-fonts t)
+
+;; font
+(set-face-attribute 'default nil
+                    :family "Sarasa Mono SC"
+                    :height 130)
+(set-face-attribute 'variable-pitch nil
+                    :family "Inter"
+                    :height 130)
+(set-face-attribute 'fixed-pitch nil
+                    :family "Iosevka"
+                    :height 130)
+
+;; Chinese input
 (use-package posframe
   :ensure t)
 
 (use-package rime
-  :custom
-  (rime-user-data-dir "~/.config/fcitx/rime")
-  (default-input-method "rime")
-  (rime-show-candidate 'posframe))
-
-;; Dev Section
-
-(use-package exec-path-from-shell
   :ensure t
-  :if (memq window-system '(mac ns x))
   :config
-  (setq exec-path-from-shell-shell-name "/usr/bin/fish")
-  (exec-path-from-shell-initialize))
+  (setq rime-user-data-dir "~/.config/fcitx/rime/"
+        rime-posframe-properties (list :font "sarasa ui sc"
+                                       :internal-border-width 10)
+        rime-disable-predicates '(rime-predicate-after-alphabet-char-p
+                                  rime-predicate-prog-in-code-p
+                                  rime-predicate-space-after-cc-p
+                                  rime-predicate-current-uppercase-letter-p
+                                  rime-predicate-punctuation-after-space-cc-p)))
 
-;; Detect go.mod as the project root
-(customize-set-variable 'project-vc-extra-root-markers '("go.mod"))
+(setq default-input-method "rime")
 
-;; Set up the Language Server Protocol (LSP) servers using Eglot.
-(use-package eglot
+;; org mode
+(global-set-key (kbd "C-c l") #'org-store-link)
+(global-set-key (kbd "C-c a") #'org-agenda)
+(global-set-key (kbd "C-c c") #'org-capture)
+
+(use-package org
   :ensure nil
-  :commands (eglot-ensure
-             eglot-rename
-             eglot-format-buffer)
-  :bind (:map eglot-mode-map
-              ("C-c l r" . eglot-rename)
-              ("C-c l f" . eglot-format)
-              ("C-c l a" . eglot-code-action)))
-(add-hook 'go-mode-hook #'eglot-ensure)
-(add-hook 'go-ts-mode-hook #'eglot-ensure)
-
-(setq-default eglot-workspace-configuration
-              '((:gopls .
-                        ((staticcheck . t)
-                         (matcher . "CaseSensitive")
-                         (completeUnimported . t)))))
-
-(defun my/go-eglot-organize-imports ()
-  "Auto import by gopls"
-  (interactive)
-  (eglot-code-actions nil nil "source.organizeImports" t))
-
-(add-hook 'go-mode-hook
-          (lambda ()
-            (add-hook 'before-save-hook 'my/go-eglot-organize-imports nil t)))
-
-(use-package go-ts-mode
-  :mode (("\\.go\\'" . go-ts-mode)
-         ("/go\\.mode\\'" . go-mode-ts-mode))
-  :custom (go-ts-mode-indent-offset 4))
-
-(use-package flymake
-  :hook prog-mode)
-
-(use-package flymake-golangci
-  :straight (flymake-golangci :type git :host github :repo "storvik/flymake-golangci") ;; using straight
-  :hook (go-ts-mode . flymake-golangci-load-backend))
+  :hook ((org-mode . variable-pitch-mode)
+         (org-mode . (lambda ()
+                       (corfu-mode -1))))
+  :custom-face
+  (org-document-title ((t (:height 1.6 :weight bold))))
+  (org-level-1 ((t (:height 1.4 :weight bold))))
+  (org-level-2 ((t (:height 1.3 :weight bold))))
+  (org-level-3 ((t (:height 1.2 :weight bold))))
+  (org-level-4 ((t (:height 1.1 :weight bold))))
+  :config
+  (setq org-M-RET-may-split-line '((default . nil))
+        org-insert-heading-respect-content t
+        org-pretty-entities t
+        org-auto-align-tags t))
