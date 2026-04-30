@@ -1,6 +1,6 @@
 * Font
 #+begin_src
-  sudo pacman -S ttf-sarasa-gothic inter-font ttc-iosevka
+  yay -S ttf-aporetic ttf-lxgw-wenkai-gb ttf-twemoji-color ttc-iosevka
 #+end_src
 * Input Method
 #+begin_src

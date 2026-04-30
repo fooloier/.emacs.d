@@ -7,6 +7,7 @@
 ;; Ensure adding the following compile-angel code at the very beginning
 ;; of your `~/.emacs.d/post-init.el` file, before all other packages.
 (use-package compile-angel
+  :diminish
   :demand t
   :config
   ;; The following disables compilation of packages during installation;
@@ -316,6 +317,7 @@
   :bind ("C-=" . er/expand-region))
 
 (use-package which-key
+  :diminish
   :ensure nil ; builtin
   :commands which-key-mode
   :hook (after-init . which-key-mode)
@@ -362,14 +364,20 @@
 
 ;; font
 (set-face-attribute 'default nil
-                    :family "Sarasa Mono SC"
+                    :family "Iosevka"
                     :height 130)
+(dolist (charset '(kana han cjk-misc bopomofo))
+  (set-fontset-font (frame-parameter nil 'font) charset
+                    (font-spec :family "LXGW WenKai GB" :height 130)))
+(set-fontset-font t 'emoji (font-spec :family "Twitter Color Emoji") nil 'prepend)
+
 (set-face-attribute 'variable-pitch nil
-                    :family "Inter"
+                    :family "Aporetic Serif"
                     :height 130)
 (set-face-attribute 'fixed-pitch nil
                     :family "Iosevka"
                     :height 130)
+
 
 ;; Chinese input
 (use-package posframe
@@ -379,8 +387,9 @@
   :ensure t
   :config
   (setq rime-user-data-dir "~/.config/fcitx/rime/"
-        rime-posframe-properties (list :font "sarasa ui sc"
-                                       :internal-border-width 10)
+        rime-show-candidate 'posframe
+        rime-posframe-properties (list :font "LXGW WenKai GB"
+                                       :internal-border-width 1)
         rime-disable-predicates '(rime-predicate-after-alphabet-char-p
                                   rime-predicate-prog-in-code-p
                                   rime-predicate-space-after-cc-p
@@ -396,8 +405,7 @@
 
 (use-package org
   :ensure nil
-  :hook ((org-mode . variable-pitch-mode)
-         (org-mode . (lambda ()
+  :hook ((org-mode . (lambda ()
                        (corfu-mode -1))))
   :custom-face
   (org-document-title ((t (:height 1.6 :weight bold))))
@@ -409,4 +417,71 @@
   (setq org-M-RET-may-split-line '((default . nil))
         org-insert-heading-respect-content t
         org-pretty-entities t
-        org-auto-align-tags t))
+        org-auto-align-tags t)
+  (setq word-wrap-by-category t))
+
+(use-package mixed-pitch
+  :ensure t
+  :hook (org-mode . mixed-pitch-mode)
+  :config
+  (setq mixed-pitch-variable-pitch-cursor 'box))
+
+(use-package olivetti
+  :ensure t
+  :hook (org-mode . olivetti-mode)
+  :custom
+  (olivetti-style 'fancy))
+
+(use-package spacious-padding
+  :ensure t
+  :config
+  ;; These are the default values, but I keep them here for visibility.
+  ;; Also check `spacious-padding-subtle-frame-lines'.
+  (setq spacious-padding-widths
+        '( :internal-border-width 10
+           :header-line-width 4
+           :mode-line-width 4
+           :custom-button-width 3
+           :tab-width 4
+           :right-divider-width 30
+           :scroll-bar-width 8
+           :fringe-width 8))
+
+  (spacious-padding-mode 1))
+
+;; WSL2 copy/paste
+
+(defun wsl-copy (beg end)
+  "In a WSL2 environment, copy region to the system clipboard."
+  (interactive "r")
+  (let ((default-directory "/"))
+    (shell-command-on-region beg end "clip.exe" " *wsl-copy*"))
+  (deactivate-mark))
+
+(defun wsl-get-clipboard ()
+  "In a WSL2 environment, get the clipboard text."
+  (let ((clipboard
+         (let ((default-directory "/"))
+           (shell-command-to-string "powershell.exe -command 'Get-Clipboard' 2>/dev/null"))))
+    (setq clipboard (replace-regexp-in-string "\r" "" clipboard))
+    (setq clipboard (substring clipboard 0 -1))
+    clipboard))
+
+(defun wsl-paste ()
+  "In a WSL2 environment, paste the text from the system clipboard."
+  (interactive)
+  (if (derived-mode-p 'vterm-mode)
+      (vterm-insert (wsl-get-clipboard))
+    (insert (wsl-get-clipboard))))
+
+(when (string-match "WSL2" operating-system-release)
+  (advice-add 'gui-select-text :before
+              (lambda (text)
+                (when select-enable-clipboard
+                  (with-temp-buffer
+                    (insert text)
+                    (wsl-copy (point-min) (point-max)))))))
+
+;; dev
+(use-package go-mode
+  :ensure t)
