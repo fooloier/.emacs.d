@@ -4,7 +4,7 @@
 ;; URL: https://github.com/jamescherti/minimal-emacs.d
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: maint
-;; Version: 1.4.2
+;; Version: 1.5.0
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;;; Commentary:
@@ -494,15 +494,7 @@
 
 ;; Configure Ediff to use a single frame and split windows horizontally
 (setq ediff-window-setup-function 'ediff-setup-windows-plain
-      ediff-split-window-function 'split-window-horizontally
-
-      ;; Ignore all whitespace differences (-w) to reduce visual noise from
-      ;; indentation changes or auto-formatters, keeping the focus on logic.
-      ediff-diff-options "-w"
-
-      ;; Skip over regions where the only differences are whitespace (or other
-      ;; ignored options) when navigating with 'n' and 'p'.
-      ediff-ignore-similar-regions t)
+      ediff-split-window-function 'split-window-horizontally)
 
 ;;; Diff
 
@@ -632,7 +624,7 @@
 (setq minimal-emacs--success t)
 
 ;; Local variables:
-;; byte-compile-warnings: (not free-vars)
+;; byte-compile-warnings: (not obsolete free-vars)
 ;; End:
 
 ;;; init.el ends here
